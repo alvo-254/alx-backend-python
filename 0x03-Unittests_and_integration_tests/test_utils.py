@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
+"""Unit tests for utils.memoize"""
 
+import unittest
+from unittest.mock import patch
+from parameterized import parameterized
 from utils import memoize
 
 
 class TestMemoize(unittest.TestCase):
-    """Test the memoize decorator"""
+    """Tests for the memoize decorator"""
 
     def test_memoize(self):
-        """Check that memoization caches the result"""
-
+        """Test that memoize caches the result of a method"""
         class TestClass:
             def a_method(self):
                 return 42
@@ -17,11 +20,14 @@ class TestMemoize(unittest.TestCase):
             def a_property(self):
                 return self.a_method()
 
-        with patch.object(TestClass, 'a_method', return_value=42) as mock_method:
-            test_obj = TestClass()
-            result1 = test_obj.a_property
-            result2 = test_obj.a_property
+        with patch.object(TestClass, 'a_method') as mock_method:
+            mock_method.return_value = 42
+            test = TestClass()
 
-            self.assertEqual(result1, 42)
-            self.assertEqual(result2, 42)
+            # Call memoized method twice
+            result_1 = test.a_property
+            result_2 = test.a_property
+
             mock_method.assert_called_once()
+            self.assertEqual(result_1, 42)
+            self.assertEqual(result_2, 42)
