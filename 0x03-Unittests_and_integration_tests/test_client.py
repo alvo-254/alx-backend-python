@@ -55,3 +55,31 @@ class TestGithubOrgClient(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    @patch("client.get_json")
+    @patch("client.GithubOrgClient._public_repos_url", new_callable=PropertyMock)
+    def test_public_repos_with_license(self, mock_repos_url, mock_get_json):
+        """Test public_repos filters by license"""
+        mock_repos_url.return_value = "https://api.github.com/orgs/google/repos"
+        mock_get_json.return_value = [
+            {
+                "name": "repo1",
+                "license": {"key": "apache-2.0"}
+            },
+            {
+                "name": "repo2",
+                "license": {"key": "mit"}
+            },
+            {
+                "name": "repo3",
+                "license": {"key": "apache-2.0"}
+            },
+        ]
+
+        client = GithubOrgClient("google")
+        result = client.public_repos(license="apache-2.0")
+        expected = ["repo1", "repo3"]
+
+        self.assertEqual(result, expected)
+        mock_get_json.assert_called_once()
+        mock_repos_url.assert_called_once()
