@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""utils module"""
+"""Utils module"""
 
 import requests
 
