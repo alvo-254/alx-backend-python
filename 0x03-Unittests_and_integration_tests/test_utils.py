@@ -6,16 +6,16 @@ from utils import access_nested_map
 
 
 class TestAccessNestedMap(unittest.TestCase):
-    """Test cases for access_nested_map function"""
+    """Test the access_nested_map function"""
 
     def test_access_nested_map(self):
-        """Test valid map paths"""
+        """Test cases with valid inputs"""
         self.assertEqual(access_nested_map({"a": 1}, ("a",)), 1)
         self.assertEqual(access_nested_map({"a": {"b": 2}}, ("a",)), {"b": 2})
         self.assertEqual(access_nested_map({"a": {"b": 2}}, ("a", "b")), 2)
 
     def test_access_nested_map_exception(self):
-        """Test that KeyError or TypeError are raised for invalid paths"""
+        """Test cases that should raise exceptions"""
         with self.assertRaises(KeyError):
             access_nested_map({}, ("a",))
 
