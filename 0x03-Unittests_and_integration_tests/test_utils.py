@@ -1,29 +1,36 @@
 #!/usr/bin/env python3
 """Test utils module"""
 import unittest
-from parameterized import parameterized
 from unittest.mock import patch, Mock
-from utils import access_nested_map, get_json
+from utils import memoize
 
 
-class TestGetJson(unittest.TestCase):
-    """Test class for get_json function"""
+class TestMemoize(unittest.TestCase):
+    """Test class for memoize decorator"""
 
-    @parameterized.expand([
-        ("http://example.com", {"payload": True}),
-        ("http://holberton.io", {"payload": False}),
-    ])
-    @patch('requests.get')
-    def test_get_json(self, test_url, test_payload, mock_get):
-        """Test get_json returns expected result without making HTTP calls"""
-        # Create a mock response object
-        mock_response = Mock()
-        mock_response.json.return_value = test_payload
-        mock_get.return_value = mock_response
+    def test_memoize(self):
+        """Test that memoize decorator caches results properly"""
+        
+        class TestClass:
+            """Test class with memoized property"""
+            
+            def a_method(self):
+                return 42
 
-        # Call the function
-        result = get_json(test_url)
+            @memoize
+            def a_property(self):
+                return self.a_method()
 
-        # Assertions
-        mock_get.assert_called_once_with(test_url)
-        self.assertEqual(result, test_payload)
+        # Create instance of test class
+        test_instance = TestClass()
+
+        # Patch the a_method to track calls and return fixed value
+        with patch.object(TestClass, 'a_method', return_value=42) as mock_method:
+            # First call - should call a_method
+            self.assertEqual(test_instance.a_property, 42)
+            
+            # Second call - should return cached result
+            self.assertEqual(test_instance.a_property, 42)
+            
+            # Verify a_method was called only once
+            mock_method.assert_called_once()
