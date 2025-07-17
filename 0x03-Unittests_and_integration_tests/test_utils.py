@@ -3,26 +3,20 @@
 
 import unittest
 from utils import access_nested_map
-from parameterized import parameterized
 
 
 class TestAccessNestedMap(unittest.TestCase):
     """Unit tests for access_nested_map"""
 
-    @parameterized.expand([
-        ({"a": 1}, ("a",), 1),
-        ({"a": {"b": 2}}, ("a",), {"b": 2}),
-        ({"a": {"b": 2}}, ("a", "b"), 2)
-    ])
-    def test_access_nested_map(self, nested_map, path, expected):
-        """Test access_nested_map returns correct values"""
-        self.assertEqual(access_nested_map(nested_map, path), expected)
+    def test_access_nested_map(self):
+        """Test valid inputs to access_nested_map"""
+        self.assertEqual(access_nested_map({"a": 1}, ("a",)), 1)
+        self.assertEqual(access_nested_map({"a": {"b": 2}}, ("a",)), {"b": 2})
+        self.assertEqual(access_nested_map({"a": {"b": 2}}, ("a", "b")), 2)
 
-    @parameterized.expand([
-        ({}, ("a",), KeyError),
-        ({"a": 1}, ("a", "b"), TypeError)
-    ])
-    def test_access_nested_map_exception(self, nested_map, path, expected_exception):
-        """Test access_nested_map raises correct exceptions"""
-        with self.assertRaises(expected_exception):
-            access_nested_map(nested_map, path)
+    def test_access_nested_map_exception(self):
+        """Test exceptions for invalid keys"""
+        with self.assertRaises(KeyError):
+            access_nested_map({}, ("a",))
+        with self.assertRaises(TypeError):
+            access_nested_map({"a": 1}, ("a", "b"))
