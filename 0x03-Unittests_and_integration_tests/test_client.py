@@ -1,22 +1,17 @@
-class TestGithubOrgClient(unittest.TestCase):
-    """Test case for GithubOrgClient class."""
+#!/usr/bin/env python3
+"""Unit tests for utils.access_nested_map"""
+import unittest
+from parameterized import parameterized
+from utils import access_nested_map
 
-    @patch('client.get_json')
-    def test_org(self, mock_get_json):
-        """Test GithubOrgClient.org returns the correct data."""
-        test_payload = {"login": "alx"}
-        mock_get_json.return_value = test_payload
+class TestAccessNestedMap(unittest.TestCase):
+    """Tests for access_nested_map function"""
 
-        client = GithubOrgClient("alx")
-        result = client.org
-
-        self.assertEqual(result, test_payload)
-        mock_get_json.assert_called_once_with("https://api.github.com/orgs/alx")
-
-    def test_public_repos_url(self):
-        """Test that _public_repos_url returns the correct value from org."""
-        with patch.object(GithubOrgClient, 'org', new_callable=PropertyMock) as mock_org:
-            mock_org.return_value = {"repos_url": "https://api.github.com/orgs/alx/repos"}
-            client = GithubOrgClient("alx")
-            result = client._public_repos_url
-            self.assertEqual(result, "https://api.github.com/orgs/alx/repos")
+    @parameterized.expand([
+        ({"a": 1}, ("a",), 1),
+        ({"a": {"b": 2}}, ("a",), {"b": 2}),
+        ({"a": {"b": 2}}, ("a", "b"), 2)
+    ])
+    def test_access_nested_map(self, nested_map, path, expected):
+        """Test that access_nested_map returns correct result"""
+        self.assertEqual(access_nested_map(nested_map, path), expected)
