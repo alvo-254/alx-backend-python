@@ -2,7 +2,7 @@
 """Unit tests for client.py"""
 
 import unittest
-from unittest.mock import patch, PropertyMock, Mock
+from unittest.mock import patch, PropertyMock
 from parameterized import parameterized
 from client import GithubOrgClient
 
@@ -11,21 +11,19 @@ class TestGithubOrgClient(unittest.TestCase):
     """Test class for GithubOrgClient"""
 
     @parameterized.expand([
-        ("google",),
-        ("abc",),
+        ("google", {"login": "google"}),
+        ("abc", {"login": "abc"}),
     ])
-    @patch("client.get_json")
-    def test_org(self, org_name, mock_get_json):
+    @patch('client.get_json')
+    def test_org(self, org_name, expected, mock_get_json):
         """Test that GithubOrgClient.org returns correct payload"""
-        expected_payload = {"login": org_name}
-        mock_get_json.return_value = expected_payload
+        mock_get_json.return_value = expected
 
         client = GithubOrgClient(org_name)
-        self.assertEqual(client.org, expected_payload)
+        self.assertEqual(client.org, expected)
         mock_get_json.assert_called_once_with(
             f"https://api.github.com/orgs/{org_name}"
         )
-        mock_get_json.reset_mock()
 
     def test_public_repos_url(self):
         """Test that _public_repos_url returns correct value"""
@@ -45,10 +43,7 @@ class TestGithubOrgClient(unittest.TestCase):
     @patch('client.get_json')
     def test_public_repos(self, mock_get_json):
         """Test public_repos method"""
-        test_payload = [
-            {"name": "repo1"},
-            {"name": "repo2"}
-        ]
+        test_payload = [{"name": "repo1"}, {"name": "repo2"}]
         mock_get_json.return_value = test_payload
 
         with patch(
@@ -68,6 +63,8 @@ class TestGithubOrgClient(unittest.TestCase):
     @parameterized.expand([
         ({"license": {"key": "my_license"}}, "my_license", True),
         ({"license": {"key": "other_license"}}, "my_license", False),
+        ({}, "my_license", False),
+        ({"license": {}}, "my_license", False),
     ])
     def test_has_license(self, repo, license_key, expected):
         """Test has_license method"""
