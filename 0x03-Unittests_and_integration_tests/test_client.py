@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unittest for GithubOrgClient.org"""
+"""Unit tests for GithubOrgClient.org"""
 
 import unittest
 from unittest.mock import patch
@@ -8,7 +8,7 @@ from client import GithubOrgClient
 
 
 class TestGithubOrgClient(unittest.TestCase):
-    """Tests for GithubOrgClient"""
+    """Test class for GithubOrgClient"""
 
     @parameterized.expand([
         ("google", {"login": "google"}),
@@ -16,7 +16,7 @@ class TestGithubOrgClient(unittest.TestCase):
     ])
     @patch('client.get_json')
     def test_org(self, org_name, expected, mock_get_json):
-        """Test the org method with mocked get_json"""
+        """Test that GithubOrgClient.org returns correct data"""
         mock_get_json.return_value = expected
 
         client = GithubOrgClient(org_name)
@@ -24,4 +24,3 @@ class TestGithubOrgClient(unittest.TestCase):
 
         self.assertEqual(result, expected)
         mock_get_json.assert_called_once_with(f"https://api.github.com/orgs/{org_name}")
-

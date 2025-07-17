@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """utils module"""
 
-def access_nested_map(nested_map, path):
-    """Access nested map with path"""
-    for key in path:
-        nested_map = nested_map[key]
-    return nested_map
+import requests
+
+
+def get_json(url):
+    """Fetch JSON data from a URL"""
+    response = requests.get(url)
+    return response.json()
