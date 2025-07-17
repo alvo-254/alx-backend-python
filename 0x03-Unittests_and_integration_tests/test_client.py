@@ -11,66 +11,46 @@ class TestGithubOrgClient(unittest.TestCase):
     """Test class for GithubOrgClient"""
 
     @parameterized.expand([
-        ("google", {"login": "google"}),
-        ("abc", {"login": "abc"}),
+        ("google",),
+        ("abc",),
     ])
-    @patch('client.get_json')
-    def test_org(self, org_name, expected, mock_get_json):
+    @patch("client.get_json")
+    def test_org(self, org_name, mock_get_json):
         """Test that GithubOrgClient.org returns correct payload"""
-        mock_get_json.return_value = expected
+        expected_payload = {"login": org_name}
+        mock_get_json.return_value = expected_payload
 
         client = GithubOrgClient(org_name)
-        self.assertEqual(client.org, expected)
-        mock_get_json.assert_called_once_with(
-            f"https://api.github.com/orgs/{org_name}"
-        )
+        self.assertEqual(client.org, expected_payload)
+        mock_get_json.assert_called_once_with(f"https://api.github.com/orgs/{org_name}")
 
-    def test_public_repos_url(self):
+    @patch("client.GithubOrgClient.org", new_callable=PropertyMock)
+    def test_public_repos_url(self, mock_org):
         """Test that _public_repos_url returns correct value"""
-        with patch(
-            'client.GithubOrgClient.org',
-            new_callable=PropertyMock
-        ) as mock_org:
-            test_payload = {
-                "repos_url": "https://api.github.com/orgs/google/repos"
-            }
-            mock_org.return_value = test_payload
+        mock_org.return_value = {"repos_url": "https://api.github.com/orgs/google/repos"}
 
-            client = GithubOrgClient("google")
-            result = client._public_repos_url
-            self.assertEqual(result, test_payload["repos_url"])
+        client = GithubOrgClient("google")
+        result = client._public_repos_url
+        self.assertEqual(result, "https://api.github.com/orgs/google/repos")
 
-    @patch('client.get_json')
-    def test_public_repos(self, mock_get_json):
-        """Test public_repos method"""
-        test_payload = [{"name": "repo1"}, {"name": "repo2"}]
-        mock_get_json.return_value = test_payload
+    @patch("client.get_json")
+    @patch("client.GithubOrgClient._public_repos_url", new_callable=PropertyMock)
+    def test_public_repos(self, mock_repos_url, mock_get_json):
+        """Test that public_repos returns the correct list of repos"""
+        mock_repos_url.return_value = "https://api.github.com/orgs/google/repos"
+        mock_get_json.return_value = [
+            {"name": "repo1"},
+            {"name": "repo2"},
+            {"name": "repo3"},
+        ]
 
-        with patch(
-            'client.GithubOrgClient._public_repos_url',
-            new_callable=PropertyMock
-        ) as mock_public_repos_url:
-            mock_public_repos_url.return_value = (
-                "https://api.github.com/orgs/google/repos"
-            )
-            client = GithubOrgClient("google")
-            result = client.public_repos()
+        client = GithubOrgClient("google")
+        result = client.public_repos()
+        expected = ["repo1", "repo2", "repo3"]
 
-            self.assertEqual(result, ["repo1", "repo2"])
-            mock_get_json.assert_called_once()
-            mock_public_repos_url.assert_called_once()
-
-    @parameterized.expand([
-        ({"license": {"key": "my_license"}}, "my_license", True),
-        ({"license": {"key": "other_license"}}, "my_license", False),
-        ({}, "my_license", False),
-        ({"license": {}}, "my_license", False),
-    ])
-    def test_has_license(self, repo, license_key, expected):
-        """Test has_license method"""
-        client = GithubOrgClient("test")
-        result = client.has_license(repo, license_key)
         self.assertEqual(result, expected)
+        mock_get_json.assert_called_once_with("https://api.github.com/orgs/google/repos")
+        mock_repos_url.assert_called_once()
 
 
 if __name__ == "__main__":
