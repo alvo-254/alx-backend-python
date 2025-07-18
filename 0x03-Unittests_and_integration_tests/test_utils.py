@@ -1,33 +1,23 @@
 #!/usr/bin/env python3
-"""Unit tests for utils.memoize"""
+"""Unit tests for client.py"""
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, PropertyMock
 from parameterized import parameterized
-from utils import memoize
+from client import GithubOrgClient
 
 
-class TestMemoize(unittest.TestCase):
-    """Tests for the memoize decorator"""
+class TestGithubOrgClient(unittest.TestCase):
+    """Unit tests for GithubOrgClient"""
 
-    def test_memoize(self):
-        """Test that memoize caches the result of a method"""
-        class TestClass:
-            def a_method(self):
-                return 42
-
-            @memoize
-            def a_property(self):
-                return self.a_method()
-
-        with patch.object(TestClass, 'a_method') as mock_method:
-            mock_method.return_value = 42
-            test = TestClass()
-
-            # Call memoized method twice
-            result_1 = test.a_property
-            result_2 = test.a_property
-
-            mock_method.assert_called_once()
-            self.assertEqual(result_1, 42)
-            self.assertEqual(result_2, 42)
+    @parameterized.expand([
+        ("google", {"login": "google"}),
+        ("abc", {"login": "abc"})
+    ])
+    @patch("client.get_json")
+    def test_org(self, org_name, expected_payload, mock_get_json):
+        """Test GithubOrgClient.org returns correct payload"""
+        mock_get_json.return_value = expected_payload
+        client = GithubOrgClient(org_name)
+        self.assertEqual(client.org, expected_payload)
+        mock_get_json.assert_called_once_with(f"https://api.github.com/orgs/{org_name}")
