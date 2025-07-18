@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """Client module"""
 
-from utils import get_json
+from utils import get_json, memoize
 
 
 class GithubOrgClient:
-    """Client for GitHub organization"""
-
-    ORG_URL = "https://api.github.com/orgs/{org}"
+    """GitHub Organization Client"""
+    ORG_URL = "https://api.github.com/orgs/{}"
 
     def __init__(self, org_name):
         self.org_name = org_name
 
+    @memoize
     def org(self):
-        """Get the organization info"""
-        return get_json(self.ORG_URL.format(org=self.org_name))
+        """Return organization data"""
+        return get_json(self.ORG_URL.format(self.org_name))
