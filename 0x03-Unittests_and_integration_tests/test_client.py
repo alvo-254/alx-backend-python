@@ -7,6 +7,7 @@ from parameterized import parameterized, parameterized_class
 from client import GithubOrgClient
 from fixtures import org_payload, repos_payload, expected_repos, apache2_repos
 
+
 # ----------- Unit Tests -----------
 class TestGithubOrgClient(unittest.TestCase):
     """Unit tests for GithubOrgClient class."""
@@ -48,7 +49,7 @@ class TestGithubOrgClient(unittest.TestCase):
                    new_callable=PropertyMock) as mock_url:
             mock_url.return_value = test_url
             client = GithubOrgClient("test_org")
-            self.assertEqual(client.public_repos(), ["repo1", "repo2"])
+            self.assertEqual(client.public_repos, ["repo1", "repo2"])
             mock_get_json.assert_called_once_with(test_url)
             mock_url.assert_called_once()
 
@@ -101,7 +102,8 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
     def test_public_repos(self):
         """Test public_repos returns expected repos."""
         client = GithubOrgClient("google")
-        self.assertEqual(client.public_repos(), self.expected_repos)
+        self.assertEqual(client.public_repos(license=None),
+                         self.expected_repos)
 
     def test_public_repos_with_license(self):
         """Test public_repos with apache-2.0 license."""
