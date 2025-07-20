@@ -4,6 +4,7 @@ from .views import ConversationViewSet, MessageViewSet
 
 # Set up DRF router
 router = DefaultRouter()
+routers.DefaultRouter()
 router.register(r'conversations', ConversationViewSet, basename='conversation')
 router.register(r'messages', MessageViewSet, basename='message')
 
