@@ -1,28 +1,41 @@
 # chats/middleware.py
-from datetime import datetime
-from django.http import HttpResponseForbidden
+from datetime import datetime, timedelta
+from django.http import JsonResponse
+from collections import defaultdict, deque
 
-class RequestLoggingMiddleware:
+# Dictionary to store requests per IP
+request_log = defaultdict(lambda: deque())
+
+class OffensiveLanguageMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
+        self.rate_limit = 5  # messages
+        self.time_window = timedelta(minutes=1)  # per minute
 
     def __call__(self, request):
-        user = request.user if hasattr(request, "user") and request.user.is_authenticated else "AnonymousUser"
-        log_entry = f"{datetime.now()} - User: {user} - Path: {request.path}\n"
+        if request.method == "POST" and request.path.startswith("/api/messages"):
+            ip = self.get_client_ip(request)
+            now = datetime.now()
 
-        with open("requests.log", "a") as log_file:
-            log_file.write(log_entry)
+            # Remove outdated entries
+            while request_log[ip] and now - request_log[ip][0] > self.time_window:
+                request_log[ip].popleft()
+
+            if len(request_log[ip]) >= self.rate_limit:
+                return JsonResponse(
+                    {"error": "Rate limit exceeded. Max 5 messages per minute."},
+                    status=429
+                )
+
+            request_log[ip].append(now)
 
         response = self.get_response(request)
         return response
 
-
-class RestrictAccessByTimeMiddleware:
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        current_hour = datetime.now().hour
-        if not (6 <= current_hour < 21):  # 6AM to 9PM access only
-            return HttpResponseForbidden("Access to chat is restricted outside 6 AM to 9 PM.")
-        return self.get_response(request)
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR', '')
+        return ip
