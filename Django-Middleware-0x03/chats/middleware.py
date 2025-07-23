@@ -1,6 +1,7 @@
-import re
-from datetime import datetime, time
+from datetime import datetime
 from django.http import JsonResponse
+import datetime as dt
+
 
 class RequestLoggingMiddleware:
     def __init__(self, get_response):
@@ -17,27 +18,28 @@ class RequestLoggingMiddleware:
         return response
 
 
-class TimeAccessRestrictionMiddleware:
+class TimeBasedAccessMiddleware:
     """
-    Allows access only between 8:00 AM and 5:00 PM server time.
+    Restrict access to chat endpoints after 5 PM server time (17:00).
     """
+
     def __init__(self, get_response):
         self.get_response = get_response
-        self.start_time = time(8, 0, 0)
-        self.end_time = time(17, 0, 0)
 
     def __call__(self, request):
-        now = datetime.now().time()
-        if not (self.start_time <= now <= self.end_time):
-            return JsonResponse({'error': 'Access allowed only between 08:00 and 17:00.'}, status=403)
-
+        if request.path.startswith('/api/') and dt.datetime.now().hour >= 17:
+            return JsonResponse(
+                {'error': 'Access to chat is restricted after 5 PM.'},
+                status=403
+            )
         return self.get_response(request)
 
 
-class RolePermissionMiddleware:
+class RolepermissionMiddleware:
     """
     Only users with roles 'moderator' or 'admin' can post messages.
     """
+
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -49,27 +51,5 @@ class RolePermissionMiddleware:
 
             if getattr(user, 'role', None) not in ['moderator', 'admin']:
                 return JsonResponse({'error': 'You do not have permission to perform this action.'}, status=403)
-
-        return self.get_response(request)
-
-
-class OffensiveLanguageMiddleware:
-    """
-    Middleware to detect offensive words in message content.
-    Blocks request if offensive language is found in POST body.
-    """
-    def __init__(self, get_response):
-        self.get_response = get_response
-        self.offensive_words = ["badword", "nasty", "stupid"]
-
-    def __call__(self, request):
-        if request.path.startswith('/api/') and request.method == 'POST':
-            try:
-                body = request.body.decode('utf-8')
-                for word in self.offensive_words:
-                    if re.search(rf'\b{word}\b', body, re.IGNORECASE):
-                        return JsonResponse({'error': 'Offensive language is not allowed.'}, status=400)
-            except Exception:
-                return JsonResponse({'error': 'Invalid request body.'}, status=400)
 
         return self.get_response(request)
