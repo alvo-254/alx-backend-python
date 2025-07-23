@@ -43,6 +43,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'chats',
+    'rest_framework.authentication.BasicAuthentication'
+'rest_framework.authentication.SessionAuthentication'
+
 ]
 
 MIDDLEWARE = [
