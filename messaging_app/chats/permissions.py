@@ -1,28 +1,25 @@
 # chats/permissions.py
 
-from rest_framework import permissions
-from .models import Conversation
+from rest_framework.permissions import BasePermission, SAFE_METHODS
 
-class IsParticipantOfConversation(permissions.BasePermission):
+class IsParticipantOfConversation(BasePermission):
     """
-    Allows access only to participants of the conversation.
+    Custom permission: only allow participants of a conversation to interact.
     """
-
-    def has_permission(self, request, view):
-        # Check if user is authenticated
-        return request.user and request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
-        """
-        Check if the user is a participant of the conversation for object-level operations.
-        Assumes the object is a Message or Conversation instance.
-        """
-        # If it's a Message instance
-        if hasattr(obj, "conversation"):
-            return request.user in obj.conversation.participants.all()
+        user = request.user
 
-        # If it's a Conversation instance
-        if isinstance(obj, Conversation):
-            return request.user in obj.participants.all()
+        # Allow viewing if user is in the conversation
+        if request.method in SAFE_METHODS:
+            return user in obj.conversation.participants.all()
+
+        # Allow update/delete only if user is in the conversation
+        if request.method in ["PUT", "PATCH", "DELETE"]:
+            return user in obj.conversation.participants.all()
+
+        # For POST (send message), also check participation
+        if request.method == "POST":
+            return user in obj.conversation.participants.all()
 
         return False
