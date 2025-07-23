@@ -1,41 +1,48 @@
-# chats/middleware.py
-from datetime import datetime, timedelta
+from datetime import datetime, time
 from django.http import JsonResponse
-from collections import defaultdict, deque
 
-# Dictionary to store requests per IP
-request_log = defaultdict(lambda: deque())
-
-class OffensiveLanguageMiddleware:
+class RequestLoggingMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
-        self.rate_limit = 5  # messages
-        self.time_window = timedelta(minutes=1)  # per minute
 
     def __call__(self, request):
-        if request.method == "POST" and request.path.startswith("/api/messages"):
-            ip = self.get_client_ip(request)
-            now = datetime.now()
+        user = request.user if hasattr(request, "user") and request.user.is_authenticated else "AnonymousUser"
+        log_entry = f"{datetime.now()} - User: {user} - Path: {request.path}\n"
 
-            # Remove outdated entries
-            while request_log[ip] and now - request_log[ip][0] > self.time_window:
-                request_log[ip].popleft()
-
-            if len(request_log[ip]) >= self.rate_limit:
-                return JsonResponse(
-                    {"error": "Rate limit exceeded. Max 5 messages per minute."},
-                    status=429
-                )
-
-            request_log[ip].append(now)
+        with open("requests.log", "a") as log_file:
+            log_file.write(log_entry)
 
         response = self.get_response(request)
         return response
 
-    def get_client_ip(self, request):
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = request.META.get('REMOTE_ADDR', '')
-        return ip
+
+class TimeAccessRestrictionMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.allowed_start_time = time(9, 0, 0)   # 9 AM
+        self.allowed_end_time = time(17, 0, 0)    # 5 PM
+
+    def __call__(self, request):
+        current_time = datetime.now().time()
+        if request.path.startswith('/api/') and not (self.allowed_start_time <= current_time <= self.allowed_end_time):
+            return JsonResponse({'error': 'Chat access is only allowed between 9 AM and 5 PM.'}, status=403)
+
+        return self.get_response(request)
+
+
+class RolePermissionMiddleware:
+    """
+    Restricts access based on user role.
+    Only allows users with role 'user', 'moderator', or 'admin'.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.path.startswith('/api/'):
+            user = getattr(request, 'user', None)
+            if user is not None and user.is_authenticated:
+                if user.role not in ['user', 'moderator', 'admin']:
+                    return JsonResponse({'error': 'Access denied: insufficient role'}, status=403)
+
+        return self.get_response(request)
