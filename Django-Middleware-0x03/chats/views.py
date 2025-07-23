@@ -1,14 +1,14 @@
-# chats/views.py
-
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
+
 from .models import Message, Conversation
-from .serializers import MessageSerializer
+from .serializers import MessageSerializer, ConversationSerializer
 from .permissions import IsParticipantOfConversation
 from .filters import MessageFilter
 from .pagination import CustomPagination
-from django.shortcuts import get_object_or_404
+
 
 class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
@@ -21,13 +21,7 @@ class MessageViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         conversation_id = self.request.data.get("conversation")
-        conversation = get_object_or_404(Conversation, id=conversation_id)
-
-        if not self.request.user.is_authenticated:
-            return Response(
-                {"detail": "Authentication required."},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        conversation = get_object_or_404(Conversation, conversation_id=conversation_id)
 
         if self.request.user not in conversation.participants.all():
             return Response(
@@ -36,3 +30,13 @@ class MessageViewSet(viewsets.ModelViewSet):
             )
 
         serializer.save(sender=self.request.user, conversation=conversation)
+
+
+class ConversationViewSet(viewsets.ModelViewSet):
+    queryset = Conversation.objects.all()
+    serializer_class = ConversationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        conversation = serializer.save()
+        conversation.participants.add(self.request.user)
