@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, time
 from django.http import JsonResponse
 
@@ -17,32 +18,58 @@ class RequestLoggingMiddleware:
 
 
 class TimeAccessRestrictionMiddleware:
+    """
+    Allows access only between 8:00 AM and 5:00 PM server time.
+    """
     def __init__(self, get_response):
         self.get_response = get_response
-        self.allowed_start_time = time(9, 0, 0)   # 9 AM
-        self.allowed_end_time = time(17, 0, 0)    # 5 PM
+        self.start_time = time(8, 0, 0)
+        self.end_time = time(17, 0, 0)
 
     def __call__(self, request):
-        current_time = datetime.now().time()
-        if request.path.startswith('/api/') and not (self.allowed_start_time <= current_time <= self.allowed_end_time):
-            return JsonResponse({'error': 'Chat access is only allowed between 9 AM and 5 PM.'}, status=403)
+        now = datetime.now().time()
+        if not (self.start_time <= now <= self.end_time):
+            return JsonResponse({'error': 'Access allowed only between 08:00 and 17:00.'}, status=403)
 
         return self.get_response(request)
 
 
 class RolePermissionMiddleware:
     """
-    Restricts access based on user role.
-    Only allows users with role 'user', 'moderator', or 'admin'.
+    Only users with roles 'moderator' or 'admin' can post messages.
     """
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        if request.path.startswith('/api/'):
-            user = getattr(request, 'user', None)
-            if user is not None and user.is_authenticated:
-                if user.role not in ['user', 'moderator', 'admin']:
-                    return JsonResponse({'error': 'Access denied: insufficient role'}, status=403)
+        if request.path.startswith('/api/') and request.method == 'POST':
+            user = request.user
+            if not user.is_authenticated:
+                return JsonResponse({'error': 'Authentication required.'}, status=401)
+
+            if getattr(user, 'role', None) not in ['moderator', 'admin']:
+                return JsonResponse({'error': 'You do not have permission to perform this action.'}, status=403)
+
+        return self.get_response(request)
+
+
+class OffensiveLanguageMiddleware:
+    """
+    Middleware to detect offensive words in message content.
+    Blocks request if offensive language is found in POST body.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.offensive_words = ["badword", "nasty", "stupid"]
+
+    def __call__(self, request):
+        if request.path.startswith('/api/') and request.method == 'POST':
+            try:
+                body = request.body.decode('utf-8')
+                for word in self.offensive_words:
+                    if re.search(rf'\b{word}\b', body, re.IGNORECASE):
+                        return JsonResponse({'error': 'Offensive language is not allowed.'}, status=400)
+            except Exception:
+                return JsonResponse({'error': 'Invalid request body.'}, status=400)
 
         return self.get_response(request)

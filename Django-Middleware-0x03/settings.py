@@ -37,6 +37,8 @@ MIDDLEWARE = [
 
     # ✅ Custom middlewares
     'chats.middleware.RequestLoggingMiddleware',
+    'chats.middleware.TimeAccessRestrictionMiddleware',
+    'chats.middleware.RolePermissionMiddleware',       # 🟩 Correct class name and spelling
     'chats.middleware.OffensiveLanguageMiddleware',
 
     'django.contrib.messages.middleware.MessageMiddleware',
