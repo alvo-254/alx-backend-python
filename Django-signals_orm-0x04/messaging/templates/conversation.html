@@ -1,0 +1,11 @@
+<h2>Conversation Threads</h2>
+{% for message in messages %}
+  <div style="margin-bottom: 10px;">
+    <strong>{{ message.sender.username }}:</strong> {{ message.content }}
+    {% for reply in message.replies.all %}
+      <div style="margin-left: 20px;">
+        ↳ <strong>{{ reply.sender.username }}:</strong> {{ reply.content }}
+      </div>
+    {% endfor %}
+  </div>
+{% endfor %}
