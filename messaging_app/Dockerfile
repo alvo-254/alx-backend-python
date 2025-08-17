@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
-# Expose port for Django
+# Expose the Django port
 EXPOSE 8000
 
 # Run migrations and start Django server
