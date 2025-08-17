@@ -7,3 +7,12 @@ kubectl get pods -l app=messaging-app
 
 # Monitor resource usage
 kubectl top pods
+
+-- messaging_app/kubctl-0x01/wrk.lua
+
+-- Simple HTTP GET request benchmark for wrk
+wrk.method = "GET"
+wrk.path   = "/"
+wrk.headers = {
+  ["Content-Type"] = "application/json"
+}
