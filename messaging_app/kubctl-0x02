@@ -1,0 +1,8 @@
+#!/bin/bash
+# Apply blue and green deployments
+kubectl apply -f blue_deployment.yaml
+kubectl apply -f green_deployment.yaml
+kubectl apply -f kubeservice.yaml
+
+# Check logs of green deployment
+kubectl logs -l app=messaging-app-green
