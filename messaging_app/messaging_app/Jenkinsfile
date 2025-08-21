@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     environment {
+        # Docker image placeholder (used in later tasks)
         DOCKER_IMAGE = "your-dockerhub-username/messaging_app:latest"
     }
 
@@ -9,7 +10,8 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/your-username/alx-backend-python.git'
+                    url: 'https://github.com/your-username/alx-backend-python.git',
+                    credentialsId: 'github-credentials'
             }
         }
 
